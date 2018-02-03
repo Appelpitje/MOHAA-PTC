@@ -4,7 +4,7 @@ import win32gui
 import socket
 import requests
 import ctypes
-import ConfigParser
+import configparser
 from datetime import timedelta
 from functools import update_wrapper
 
@@ -12,12 +12,14 @@ from flask import Flask, request, jsonify, make_response, current_app
 
 app = Flask(__name__)
 
+
 import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+
 def readConfig():
-    config = ConfigParser.RawConfigParser()
+    config = configparser.RawConfigParser()
     try:
         config.read('settings.cfg')
         settings["MOHPTC_port"] = config.get('MOHPTC-server', 'port')
@@ -27,7 +29,8 @@ def readConfig():
         settings["server_rconpassword"] = config.get('MOH-server', 'rconpassword')
         handleGame()
     except:
-        print 'Error with the config, please check if the config file exists and is in correct format.'
+        print('Error with the config, please check if the config file exists and is in correct format.')
+
 
 def handleGame():
     settings["server_windows"] = ""
@@ -42,9 +45,9 @@ def crossdomain(origin=None, methods=None, headers=None,
                 automatic_options=True):
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
+    if headers is not None and not isinstance(headers, str):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
+    if not isinstance(origin, str):
         origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -91,7 +94,7 @@ def read_console():
 
         buffer = win32gui.PyMakeBuffer(25555)
         length = win32gui.SendMessage(console, win32con.WM_GETTEXT, 25555, buffer)
-        result = buffer[:length]
+        result = buffer[0:length * 2].tobytes().decode("UTF-16")
 
         #Click the clear button
         win32gui.SendMessage(clearBtn, win32con.WM_LBUTTONDOWN, 0, 0)
@@ -99,15 +102,16 @@ def read_console():
 
         #split on newline
         splitted = result.splitlines()
+        print(splitted)
         cmd = ""
 
         kills = []
-        how = ["was rifled by ", "was machine-gunned by ", "was bashed by ", "was gunned down by ", "was crushed by ", "was clubbed by ", "was sniped by ", "was perforated by ", "pumped full of buckshot by "]
+        how = [" was rifled by ", " was machine-gunned by ", " was bashed by ", " was gunned down by ", " was sniped by ", " was crushed by ", " was clubbed by ", " was sniped by ", " was perforated by ", " pumped full of buckshot by "]
         for index, value in enumerate(splitted):
             if any(x in value for x in how):
-                kills.append(value.decode("latin1"))
+                kills.append(value)
 
-        print kills
+        print(kills)
 
         # Split kills
         # for index, value in enumerate(kills):
@@ -129,8 +133,9 @@ def read_console():
                     cmd = "say [Joke] " + joke()
                 rcon(settings["server_ip"], settings["server_port"], settings["server_rconpassword"], cmd)
 
-    except win32gui.error, e:
+    except Exception as e:
         print("Error: " + str(e))
+
 
 def rcon(ip, port, password, command):
     try:
@@ -157,7 +162,7 @@ def joke():
     r = requests.get('https://icanhazdadjoke.com/', headers={'Accept': 'application/json'})
     jokedata = r.json()
     try:
-        return str(jokedata['joke'].decode("latin1"))
+        return str(jokedata['joke'])
     except:
         return str("Oops something went wrong! Try again!")
 
@@ -177,8 +182,8 @@ if __name__ == '__main__':
     global settings
     settings = {}
     readConfig()
-    ctypes.windll.kernel32.SetConsoleTitleA("MOHAA Python Total Control [port " + str(settings["MOHPTC_port"]) + "]")
-    print("Starting MOHPTC on port: " + str(settings["MOHPTC_port"]))
+    ctypes.windll.kernel32.SetConsoleTitleA("MOHAA Python Total Control [port " + settings["MOHPTC_port"] + "]")
+    print("Starting MOHPTC on port: " + settings["MOHPTC_port"])
     read_console()
     consoleMessages()
-    app.run(threaded=True,debug=False,use_evalex=False,host='0.0.0.0',port=settings["MOHPTC_port"])
+    app.run(threaded=True, debug=False, use_evalex=False, host='0.0.0.0', port=int(settings["MOHPTC_port"]))
