@@ -143,7 +143,7 @@ def rcon(ip, port, password, command):
         sock.settimeout(0.8)
         sock.connect((ip, port))
 
-        sock.send("\xFF\xFF\xFF\xFF\x02rcon " + password + " " + command)
+        sock.send(b"\xFF\xFF\xFF\xFF\x02rcon " + str.encode(password) + b" " + str.encode(command))
         sock.close()
     except:
         print("Connection timeout.")
